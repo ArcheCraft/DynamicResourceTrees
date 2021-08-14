@@ -1,0 +1,36 @@
+modLoader="kotlinforforge"
+loaderVersion="[1.14,)"
+license='GPLv3'
+
+[[mods]]
+modId="dynamicresourcetrees"
+version="${file.jarVersion}"
+displayName="DynamicResourceTrees"
+authors="ArcheCraft"
+description='''
+
+'''
+[[dependencies.dynamicresourcetrees]]
+    modId="forge"
+    mandatory=true
+    versionRange="[36,)"
+    ordering="NONE"
+    side="BOTH"
+[[dependencies.dynamicresourcetrees]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.16.5]"
+    ordering="NONE"
+    side="BOTH"
+[[dependencies.dynamicresourcetrees]]
+    modId="dynamictrees"
+    mandatory=true
+    versionRange="[0.10.0-Beta24,)"
+    ordering="NONE"
+    side="BOTH"
+[[dependencies.dynamicresourcetrees]]
+    modId="kubejs"
+    mandatory=false
+    versionRange="[1605.3.15-build.80,)"
+    ordering="AFTER"
+    side="BOTH"

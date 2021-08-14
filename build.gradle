@@ -1,0 +1,156 @@
+buildscript {
+    repositories {
+        maven { url = 'https://maven.minecraftforge.net' }
+        mavenCentral()
+    }
+    dependencies {
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.+', changing: true
+        // Make sure this version matches the one included in Kotlin for Forge
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.5.21"
+        // OPTIONAL Gradle plugin for Kotlin Serialization
+        classpath "org.jetbrains.kotlin:kotlin-serialization:1.5.21"
+    }
+}
+apply plugin: 'net.minecraftforge.gradle'
+apply plugin: 'kotlin'
+apply plugin: 'kotlinx-serialization'
+
+version = '1.0.0'
+group = 'io.github.archecraft'
+archivesBaseName = 'dynamicresourcetrees'
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(8)
+
+minecraft {
+    // Change to your preferred mappings
+    mappings channel: 'official', version: '1.16.5'
+    // Add your AccessTransformer
+    // accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+
+    runs {
+        client {
+            workingDirectory project.file('run')
+
+            property 'forge.logging.console.level', 'debug'
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+
+            mods {
+                examplemod {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        server {
+            workingDirectory project.file('run')
+
+            property 'forge.logging.console.level', 'debug'
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+
+            mods {
+                examplemod {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        data {
+            workingDirectory project.file('run')
+
+            property 'forge.logging.console.level', 'debug'
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+
+            args '--mod', 'dynamicresourcetrees', '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources')
+
+            mods {
+                examplemod {
+                    source sourceSets.main
+                }
+            }
+        }
+    }
+}
+
+// Include assets and data from data generators
+sourceSets.main.resources { srcDirs 'src/generated/resources/' }
+
+repositories {
+    maven {
+        name = 'Kotlin for Forge'
+        url = 'https://thedarkcolour.github.io/KotlinForForge/'
+    }
+    maven {
+        name 'LDTTeam - Modding'
+        url 'https://ldtteam.jfrog.io/ldtteam/modding/'
+    }
+    maven {
+        url "https://maven.tehnut.info"
+    }
+    maven {
+        url "https://www.cursemaven.com"
+    }
+    maven {
+        url "https://harleyoconnor.com/maven"
+    }
+    maven {
+        url "https://squiddev.cc/maven/"
+    }
+    maven {
+        url = "https://maven.architectury.dev"
+        content {
+            includeGroup "me.shedaniel"
+        }
+    }
+
+    maven {
+        // saps.dev Maven (KubeJS and Rhino)
+        // you can also use Lat's Maven @ https://maven.latvian.dev/
+        url = "https://maven.saps.dev/minecraft"
+        content {
+            includeGroup "dev.latvian.mods"
+        }
+    }
+}
+
+dependencies {
+    // Use the latest version of Minecraft Forge
+    minecraft 'net.minecraftforge:forge:1.16.5-36.2.0'
+
+
+    // Use the latest version of KotlinForForge
+    implementation 'thedarkcolour:kotlinforforge:1.14.0'
+
+
+    compileOnly fg.deobf("mcp.mobius.waila:Hwyla:1.10.11-B78_1.16.2:api")
+    // At runtime, use the full Hwyla mod.
+    runtimeOnly fg.deobf("mcp.mobius.waila:Hwyla:1.10.11-B78_1.16.2")
+
+    // Compile JEI API, but don't include in runtime.
+    compileOnly fg.deobf("mezz.jei:jei-1.16.4:7.6.1.71:api")
+    // At runtime, use the full JEI mod.
+    runtimeOnly fg.deobf("mezz.jei:jei-1.16.4:7.6.1.71")
+
+    implementation fg.deobf("com.ferreusveritas.dynamictrees:DynamicTrees-1.16.5:0.10.0-Beta24")
+
+
+    implementation fg.deobf("dev.latvian.mods:kubejs-forge:1605.3.15-build.80")
+
+    // these two are unfortunately needed since fg.deobf doesn't respect transitive dependencies as of yet
+    implementation "dev.latvian.mods:rhino:1605.1.1-build.28"
+    implementation fg.deobf("me.shedaniel:architectury-forge:1.20.29")
+}
+
+jar {
+    manifest {
+        attributes([
+                "Specification-Title"     : "dynamictrees",
+                "Specification-Version"   : "1", // We are version 1 of ourselves
+                "Implementation-Title"    : project.name,
+                "Implementation-Version"  : "${version}",
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
+    }
+}
