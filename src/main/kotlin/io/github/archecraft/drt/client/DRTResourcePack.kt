@@ -1,6 +1,5 @@
 package io.github.archecraft.drt.client
 
-import com.ferreusveritas.dynamictrees.*
 import com.google.gson.*
 import io.github.archecraft.drt.*
 import io.github.archecraft.drt.config.*
@@ -82,6 +81,8 @@ class DRTResourcePack(private val resources: IResourceManager) : IResourcePack {
         DynamicResourceTrees.LOGGER.log(Level.INFO, "Generating json resources...")
         
         fun path(path: String) = DynamicResourceTrees.MOD_ID + ":" + path
+        
+        val lang = JsonObject()
         
         for (type in ConfigHandler.BAKED_COMMON.resources) {
             DynamicResourceTrees.LOGGER.log(Level.INFO, "Generating json resources for type ${type.name}")
@@ -278,13 +279,6 @@ class DRTResourcePack(private val resources: IResourceManager) : IResourcePack {
             map[DynamicResourceTrees.resourceLocation("models/item/${type.name}_resin")] = json
             
             json = JsonObject()
-            json.addProperty("parent", "item/generated")
-            textures = JsonObject()
-            textures.addProperty("layer0", path("item/${type.name}_acorn"))
-            json.add("textures", textures)
-            map[DynamicResourceTrees.resourceLocation("models/item/${type.name}_acorn")] = json
-            
-            json = JsonObject()
             variants = JsonObject()
             model = JsonObject()
             model.addProperty("model", path("block/${type.name}_amber"))
@@ -317,7 +311,16 @@ class DRTResourcePack(private val resources: IResourceManager) : IResourcePack {
             json = JsonObject()
             json.addProperty("parent", path("block/${type.name}_amber"))
             map[DynamicResourceTrees.resourceLocation("models/item/${type.name}_amber")] = json
+            
+            
+            lang.addProperty("item.${DynamicResourceTrees.MOD_ID}.${type.name}_seed", type.name.split("_").joinToString(separator = " ") { s -> s.replaceFirstChar { it.uppercase() } } + " Acorn")
+            lang.addProperty("block.${DynamicResourceTrees.MOD_ID}.${type.name}_leaves_v", type.name.split("_").joinToString(separator = " ") { s -> s.replaceFirstChar { it.uppercase() } } + " Leaves")
+            lang.addProperty("block.${DynamicResourceTrees.MOD_ID}.${type.name}_branch", type.name.split("_").joinToString(separator = " ") { s -> s.replaceFirstChar { it.uppercase() } } + " Tree")
+            lang.addProperty("item.${DynamicResourceTrees.MOD_ID}.${type.name}_resin", type.name.split("_").joinToString(separator = " ") { s -> s.replaceFirstChar { it.uppercase() } } + " Resin")
+            lang.addProperty("block.${DynamicResourceTrees.MOD_ID}.${type.name}_amber", type.name.split("_").joinToString(separator = " ") { s -> s.replaceFirstChar { it.uppercase() } } + " Amber")
         }
+        
+        map[DynamicResourceTrees.resourceLocation("lang/en_us")] = lang
         
         DynamicResourceTrees.LOGGER.log(Level.INFO, "Generated json resources")
     }
@@ -344,11 +347,12 @@ class DRTResourcePack(private val resources: IResourceManager) : IResourcePack {
             for (i in 0 until newImage.height) {
                 for (j in 0 until newImage.width) {
                     val old = Color(getRGB(j, i), true)
+                    val mod = (old.red + old.green + old.blue) / (255.0 * 3)
                     
                     if (old.alpha == 0) {
                         newImage.setRGB(j, i, old.rgb)
                     } else {
-                        val new = Color(old.red * colorMod.red / 255, old.blue * colorMod.blue / 255, old.green * colorMod.green / 255, old.alpha)
+                        val new = Color((mod * colorMod.red).toInt(), (mod * colorMod.green).toInt(), (mod * colorMod.blue).toInt(), old.alpha)
                         newImage.setRGB(j, i, new.rgb)
                     }
                 }
@@ -363,11 +367,11 @@ class DRTResourcePack(private val resources: IResourceManager) : IResourcePack {
             for (i in 0 until newImage.height) {
                 for (j in 0 until newImage.width) {
                     val modifier = Color(mask.getRGB(j, i), true)
-                    val mod = (modifier.red + modifier.green + modifier.blue) / (255.0 * 3)
                     val old = Color(getRGB(j, i), true)
+                    val mod = (modifier.red + modifier.green + modifier.blue) / (255.0 * 3)
                     
                     if (modifier.alpha != 0 && old.alpha != 0) {
-                        val new = Color((mod * colorMod.red).toInt(), (mod * colorMod.blue).toInt(), (mod * colorMod.green).toInt(), old.alpha)
+                        val new = Color((mod * colorMod.red).toInt(), (mod * colorMod.green).toInt(), (mod * colorMod.blue).toInt(), old.alpha)
                         newImage.setRGB(j, i, new.rgb)
                     } else {
                         newImage.setRGB(j, i, old.rgb)
@@ -393,34 +397,37 @@ class DRTResourcePack(private val resources: IResourceManager) : IResourcePack {
         val oreOverlayTex = texture("block/ore_overlay")
         val saplingTex = texture("block/ore_sapling")
         
-        val acornTex = texture("item/ore_acorn")
         val resinTex = texture("item/ore_resin")
         val seedTex = texture("item/ore_seed")
         
         for (type in ConfigHandler.BAKED_COMMON.resources) {
             DynamicResourceTrees.LOGGER.log(Level.INFO, "Creating textures for type ${type.name}")
             
+            DynamicResourceTrees.LOGGER.log(Level.DEBUG, "Creating leaves texture...")
             val leaves = leavesTex.modify(type.color)
             map[DynamicResourceTrees.resourceLocation("textures/block/${type.name}_leaves")] = leaves.createTemp()
             
+            DynamicResourceTrees.LOGGER.log(Level.DEBUG, "Creating log texture...")
             val log = logTex.modify(oreOverlayTex, type.color)
             map[DynamicResourceTrees.resourceLocation("textures/block/${type.name}_log")] = log.createTemp()
             
+            DynamicResourceTrees.LOGGER.log(Level.DEBUG, "Creating log_top texture...")
             val logTop = logTopTex.modify(oreOverlayTex, type.color)
             map[DynamicResourceTrees.resourceLocation("textures/block/${type.name}_log_top")] = logTop.createTemp()
             
+            DynamicResourceTrees.LOGGER.log(Level.DEBUG, "Creating amber texture...")
             val amber = amberTex.modify(type.color)
             map[DynamicResourceTrees.resourceLocation("textures/block/${type.name}_amber")] = amber.createTemp()
             
-            val acorn = acornTex.modify(type.color)
-            map[DynamicResourceTrees.resourceLocation("textures/item/${type.name}_acorn")] = acorn.createTemp()
-            
+            DynamicResourceTrees.LOGGER.log(Level.DEBUG, "Creating resin texture...")
             val resin = resinTex.modify(type.color)
             map[DynamicResourceTrees.resourceLocation("textures/item/${type.name}_resin")] = resin.createTemp()
             
+            DynamicResourceTrees.LOGGER.log(Level.DEBUG, "Creating seed texture...")
             val seed = seedTex.modify(type.color)
             map[DynamicResourceTrees.resourceLocation("textures/item/${type.name}_seed")] = seed.createTemp()
             
+            DynamicResourceTrees.LOGGER.log(Level.DEBUG, "Creating sapling texture...")
             val sapling = saplingTex.modify(type.color)
             map[DynamicResourceTrees.resourceLocation("textures/block/${type.name}_sapling")] = sapling.createTemp()
         }

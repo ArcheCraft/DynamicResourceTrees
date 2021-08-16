@@ -1,6 +1,7 @@
 package io.github.archecraft.drt.trees
 
 import com.ferreusveritas.dynamictrees.api.registry.*
+import com.ferreusveritas.dynamictrees.resources.DTResourceRegistries.*
 import com.ferreusveritas.dynamictrees.systems.dropcreators.*
 import com.ferreusveritas.dynamictrees.systems.dropcreators.context.*
 import io.github.archecraft.drt.*
@@ -12,6 +13,11 @@ import org.apache.logging.log4j.*
 object TreeRegistry {
     fun onDropCreatorRegistry(event: RegistryEvent<DropCreator>) {
         event.registry.register(ResinDrops)
+    }
+    
+    
+    fun onTreeManager(event: AddTreesLoadListenerEvent) {
+        event.treesResourceManager.addResourcePack(DRTTreesPack())
     }
     
     
@@ -33,14 +39,14 @@ object TreeRegistry {
         }
         
         override fun appendLeavesDrops(configuration: ConfiguredDropCreator<DropCreator>, context: DropContext) {
-            appendLeafDrops(context, 4)
+            appendLeafDrops(context, 8)
         }
         
         private fun appendLeafDrops(context: DropContext, chance: Int) {
             val species = context.species().registryName
             
             if (context.random().nextInt(chance) == 0) {
-                context.drops().add(ItemStack(ForgeRegistries.ITEMS.getValue(DynamicResourceTrees.resourceLocation(species.path + "_acorn")) ?: run {
+                context.drops().add(ItemStack(ForgeRegistries.ITEMS.getValue(DynamicResourceTrees.resourceLocation(species.path + "_seed")) ?: run {
                     DynamicResourceTrees.LOGGER.log(Level.ERROR, "Failed to get item for ${species.path}_acorn")
                     return
                 }, 1))

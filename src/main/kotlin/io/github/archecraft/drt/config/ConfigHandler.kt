@@ -4,7 +4,7 @@ import com.electronwill.nightconfig.core.file.*
 import com.electronwill.nightconfig.core.io.WritingMode.*
 import io.github.archecraft.drt.*
 import io.github.archecraft.drt.config.ResourceType.*
-import io.github.archecraft.drt.integration.kubejs.*
+import io.github.archecraft.drt.integration.*
 import net.minecraft.util.*
 import net.minecraftforge.common.*
 import net.minecraftforge.common.ForgeConfigSpec.*
@@ -59,31 +59,36 @@ object ConfigHandler {
             _resources = common.resources.get().mapNotNull(ConfigHandler::parseType)
         }
         
-        val resources: List<ResourceType> get() = _resources + ResourceRegistryEventJS.types.map(ResourceTypeJS::toResourceType)
+        val resources: List<ResourceType> get() = _resources + KubeJSProxy.PROXY.resourceTypes
+        val resourceTypes: Map<String, ResourceType> get() = resources.associateBy { it.name }
     }
     
     fun parseType(input: String): ResourceType? {
         val parts = input.split(",")
         
-        return if (parts.size == 3) {
-            ResourceType(
-                parts[0],
-                if (parts[1].equals("unused", true) || parts[1].equals("null", true)) Optional.empty() else {
-                    val partsDrop = parts[1].split("#")
-                    
-                    if (partsDrop.size == 4) {
-                        Optional.of(
-                            Drop(
-                                ResourceLocation(partsDrop[0]),
-                                partsDrop[1].toInt(),
-                                partsDrop[2].toInt()
-                            )
+        fun createResourceType(color: Color) = ResourceType(
+            parts[0],
+            if (parts[1].equals("unused", true) || parts[1].equals("null", true)) Optional.empty() else {
+                val partsDrop = parts[1].split("#")
+                
+                if (partsDrop.size == 4) {
+                    Optional.of(
+                        Drop(
+                            ResourceLocation(partsDrop[0]),
+                            partsDrop[1].toInt(),
+                            partsDrop[2].toInt()
                         )
-                    } else Optional.empty()
-                },
-                Color(parts[2].toInt(16))
-            )
-        } else null
+                    )
+                } else Optional.empty()
+            },
+            color
+        )
+        
+        return when (parts.size) {
+            3    -> createResourceType(Color(parts[2].toInt(16)))
+            5    -> createResourceType(Color(parts[2].toInt(), parts[3].toInt(), parts[4].toInt()))
+            else -> null
+        }
     }
     
     init {

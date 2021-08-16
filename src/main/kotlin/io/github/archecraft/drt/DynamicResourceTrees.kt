@@ -1,11 +1,9 @@
 package io.github.archecraft.drt
 
 import com.ferreusveritas.dynamictrees.api.registry.*
-import com.ferreusveritas.dynamictrees.resources.*
-import dev.latvian.kubejs.script.ScriptType.*
 import io.github.archecraft.drt.client.*
 import io.github.archecraft.drt.config.*
-import io.github.archecraft.drt.integration.kubejs.*
+import io.github.archecraft.drt.integration.*
 import io.github.archecraft.drt.registry.*
 import io.github.archecraft.drt.trees.*
 import net.minecraft.client.*
@@ -30,16 +28,14 @@ object DynamicResourceTrees {
         RegistryHandler.REGISTRY.register(registryHandler)
         MOD_BUS.register(registryHandler)
         
-        ModBlocks.REGISTRY.register(MOD_BUS)
         MOD_BUS.addGenericListener(TreeRegistry::onDropCreatorRegistry)
+        MOD_BUS.addListener(TreeRegistry::onTreeManager)
         
-        ResourceRegistryEventJS().post(STARTUP, "drt.resource.registry")
+        KubeJSProxy.PROXY.fireResourceEvent()
         
         runWhenOn(Dist.CLIENT) {
             Minecraft.getInstance().resourcePackRepository.addPackFinder(DRTResourcePackFinder(Minecraft.getInstance().resourceManager))
         }
-        
-        DTResourceRegistries.TREES_RESOURCE_MANAGER.addResourcePack(DRTTreesPack())
         
         ModBlocks.configLoaded()
     }

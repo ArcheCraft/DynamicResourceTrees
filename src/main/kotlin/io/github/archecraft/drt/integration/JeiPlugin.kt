@@ -18,7 +18,7 @@ class JeiPlugin : IModPlugin {
     
     override fun onRuntimeAvailable(jeiRuntime: IJeiRuntime) {
         jeiRuntime.ingredientManager.addIngredientsAtRuntime(VanillaTypes.ITEM, ConfigHandler.BAKED_COMMON.resources.flatMap { type ->
-            listOf("${type.name}_leaves_v", "${type.name}_resin", "${type.name}_acorn", "${type.name}_amber").mapNotNull { ForgeRegistries.ITEMS.getValue(DynamicResourceTrees.resourceLocation(it)) }.map { ItemStack(it, 1) }
+            listOf("${type.name}_leaves_v", "${type.name}_resin", "${type.name}_amber").mapNotNull { ForgeRegistries.ITEMS.getValue(DynamicResourceTrees.resourceLocation(it)) }.map { ItemStack(it, 1) }
         })
     }
 }

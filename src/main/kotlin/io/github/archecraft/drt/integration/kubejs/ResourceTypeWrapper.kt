@@ -12,10 +12,6 @@ object ResourceTypeWrapper {
         return ItemStackJS.of(DynamicResourceTrees.resourceLocation("${name}_resin"))
     }
     
-    fun acorn(name: String): ItemStackJS {
-        return ItemStackJS.of(DynamicResourceTrees.resourceLocation("${name}_acorn"))
-    }
-    
     fun amber(name: String): ItemStackJS {
         return ItemStackJS.of(DynamicResourceTrees.resourceLocation("${name}_amber"))
     }
