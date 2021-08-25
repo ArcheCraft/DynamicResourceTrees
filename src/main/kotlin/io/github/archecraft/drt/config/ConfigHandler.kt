@@ -26,7 +26,7 @@ object ConfigHandler {
             val defaultResources = listOf(
                 "dirt,unused,5e3e23",
                 "diamond,unused,2edbc7",
-                "cottonwood,minecraft:string#1#4,fff5ff"
+                "cottonwood,minecraft:string#1#16,fff5ff"
             )
             
             resources = builder
@@ -43,12 +43,13 @@ object ConfigHandler {
                                 amount : The amount to drop
                                 dropChance : The chance per broken leaves block to drop this item
                                     (chance will be 1:<number>)
+                                    dropChance for acorns: 16
                             or 'unused' / 'null' for no extra drop
                         color : The hex value of the color for this resource
-                    default: ["dirt,unused,573b30", "diamond,unused,45d6d4", "cottonwood,minecraft:string#1#4,fff5ff"]
+                    default: ["dirt,unused,573b30", "diamond,unused,45d6d4", "cottonwood,minecraft:string#1#16,fff5ff"]
                     """.trimIndent()
                 )
-                .defineListAllowEmpty(listOf("resources"), { defaultResources }) { it is String && parseType(it) == null }
+                .defineListAllowEmpty(listOf("resources"), { defaultResources }) { it is String && parseType(it) != null }
         }
     }
     
@@ -71,7 +72,7 @@ object ConfigHandler {
             if (parts[1].equals("unused", true) || parts[1].equals("null", true)) Optional.empty() else {
                 val partsDrop = parts[1].split("#")
                 
-                if (partsDrop.size == 4) {
+                if (partsDrop.size == 3) {
                     Optional.of(
                         Drop(
                             ResourceLocation(partsDrop[0]),

@@ -1,19 +1,31 @@
 package io.github.archecraft.drt.client
 
-import com.google.gson.*
-import io.github.archecraft.drt.*
-import io.github.archecraft.drt.config.*
-import net.minecraft.resources.*
-import net.minecraft.resources.data.*
-import net.minecraft.util.*
-import org.apache.logging.log4j.*
-import java.awt.*
-import java.awt.image.*
-import java.io.*
-import java.nio.file.*
-import java.util.function.*
-import javax.imageio.*
-import kotlin.io.path.*
+import com.ferreusveritas.dynamictrees.DynamicTrees
+import com.google.gson.JsonArray
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
+import io.github.archecraft.drt.DynamicResourceTrees
+import io.github.archecraft.drt.config.ConfigHandler
+import net.minecraft.resources.IResourceManager
+import net.minecraft.resources.IResourcePack
+import net.minecraft.resources.ResourcePackFileNotFoundException
+import net.minecraft.resources.ResourcePackType
+import net.minecraft.resources.data.IMetadataSectionSerializer
+import net.minecraft.util.ResourceLocation
+import org.apache.logging.log4j.Level
+import java.awt.Color
+import java.awt.image.BufferedImage
+import java.awt.image.BufferedImage.TYPE_INT_ARGB
+import java.io.File
+import java.io.FileInputStream
+import java.io.InputStream
+import java.nio.file.Path
+import java.util.function.Predicate
+import javax.imageio.ImageIO
+import kotlin.io.path.createTempFile
+import kotlin.io.path.deleteIfExists
+import kotlin.io.path.invariantSeparatorsPathString
+import kotlin.io.path.outputStream
 
 class DRTResourcePack(private val resources: IResourceManager) : IResourcePack {
     private val packType = ResourcePackType.CLIENT_RESOURCES
@@ -342,7 +354,7 @@ class DRTResourcePack(private val resources: IResourceManager) : IResourcePack {
         DynamicResourceTrees.LOGGER.log(Level.INFO, "Creating textures...")
         
         fun BufferedImage.modify(colorMod: Color): BufferedImage {
-            val newImage = BufferedImage(width, height, type)
+            val newImage = BufferedImage(width, height, TYPE_INT_ARGB)
             
             for (i in 0 until newImage.height) {
                 for (j in 0 until newImage.width) {
@@ -362,7 +374,7 @@ class DRTResourcePack(private val resources: IResourceManager) : IResourcePack {
         }
         
         fun BufferedImage.modify(mask: BufferedImage, colorMod: Color): BufferedImage {
-            val newImage = BufferedImage(width, height, type)
+            val newImage = BufferedImage(width, height, TYPE_INT_ARGB)
             
             for (i in 0 until newImage.height) {
                 for (j in 0 until newImage.width) {
@@ -382,29 +394,72 @@ class DRTResourcePack(private val resources: IResourceManager) : IResourcePack {
             return newImage
         }
         
+        fun BufferedImage.filter(predicate: (Color) -> Boolean): BufferedImage {
+            val newImage = BufferedImage(width, height, TYPE_INT_ARGB)
+            
+            for (i in 0 until newImage.height) {
+                for (j in 0 until newImage.width) {
+                    val color = Color(getRGB(j, i), true)
+                    
+                    if (predicate(color)) {
+                        newImage.setRGB(j, i, color.rgb)
+                    } else {
+                        newImage.setRGB(j, i, Color(0, 0, 0, 0).rgb)
+                    }
+                }
+            }
+            
+            return newImage
+        }
+        
+        fun BufferedImage.grayscale(): BufferedImage {
+            val newImage = BufferedImage(width, height, TYPE_INT_ARGB)
+            
+            for (i in 0 until newImage.height) {
+                for (j in 0 until newImage.width) {
+                    val color = Color(getRGB(j, i), true)
+                    val gs = (0.299 * color.red + 0.587 * color.green + 0.114 * color.blue).toInt()
+                    val new = Color(gs, gs, gs, color.alpha)
+                    newImage.setRGB(j, i, new.rgb)
+                }
+            }
+            
+            return newImage
+        }
+        
         fun BufferedImage.createTemp(): Path {
             val tempFile = createTempFile(suffix = ".png")
             tempFile.outputStream().buffered().use { ImageIO.write(this, "png", it) }
+            DynamicResourceTrees.LOGGER.log(Level.DEBUG, "Creating temp file at ${tempFile.invariantSeparatorsPathString}")
             return tempFile
         }
         
         fun texture(path: String) = resources.getResource(DynamicResourceTrees.resourceLocation("textures/$path.png")).inputStream.use { ImageIO.read(it) }
+        fun dtTex(path: String) = resources.getResource(DynamicTrees.resLoc("textures/$path.png")).inputStream.use { ImageIO.read(it) }
+        fun mcTex(path: String) = resources.getResource(ResourceLocation("textures/$path.png")).inputStream.use { ImageIO.read(it) }
         
-        val logTex = texture("block/oak_log")
-        val logTopTex = texture("block/oak_log_top")
-        val leavesTex = texture("block/ore_leaf")
-        val amberTex = texture("block/ore_amber")
-        val oreOverlayTex = texture("block/ore_overlay")
-        val saplingTex = texture("block/ore_sapling")
+        val ironOreTex = mcTex("block/iron_ore")
+        val oreOverlayTex = ironOreTex.filter {
+            it.red > 160 && it.red > it.blue && it.green in (it.blue + 1) until it.red
+        }
+    
+        val leavesTex = mcTex("block/oak_leaves")
+        val baseLeavesTex = leavesTex.grayscale()
         
-        val resinTex = texture("item/ore_resin")
-        val seedTex = texture("item/ore_seed")
+        val logTex = mcTex("block/oak_log")
+        val logTopTex = mcTex("block/oak_log_top")
+        val amberTex = texture("block/amber")
+        val saplingTex = mcTex("block/oak_sapling")
+        
+        val resinTex = texture("item/resin")
+        val oakSeedTex = dtTex("item/oak_seed")
+        val seedOverlayTex = texture("item/seed_overlay")
         
         for (type in ConfigHandler.BAKED_COMMON.resources) {
             DynamicResourceTrees.LOGGER.log(Level.INFO, "Creating textures for type ${type.name}")
             
             DynamicResourceTrees.LOGGER.log(Level.DEBUG, "Creating leaves texture...")
-            val leaves = leavesTex.modify(type.color)
+            val leaves = baseLeavesTex.modify(type.color)
             map[DynamicResourceTrees.resourceLocation("textures/block/${type.name}_leaves")] = leaves.createTemp()
             
             DynamicResourceTrees.LOGGER.log(Level.DEBUG, "Creating log texture...")
@@ -424,7 +479,7 @@ class DRTResourcePack(private val resources: IResourceManager) : IResourcePack {
             map[DynamicResourceTrees.resourceLocation("textures/item/${type.name}_resin")] = resin.createTemp()
             
             DynamicResourceTrees.LOGGER.log(Level.DEBUG, "Creating seed texture...")
-            val seed = seedTex.modify(type.color)
+            val seed = oakSeedTex.modify(seedOverlayTex, type.color)
             map[DynamicResourceTrees.resourceLocation("textures/item/${type.name}_seed")] = seed.createTemp()
             
             DynamicResourceTrees.LOGGER.log(Level.DEBUG, "Creating sapling texture...")

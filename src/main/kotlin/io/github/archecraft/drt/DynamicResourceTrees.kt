@@ -38,6 +38,9 @@ object DynamicResourceTrees {
         }
         
         ModBlocks.configLoaded()
+        
+        LOGGER.log(Level.DEBUG, "Resources: ${ConfigHandler.BAKED_COMMON.resources.joinToString()}")
+        LOGGER.log(Level.DEBUG, "ResourceTypes: ${ConfigHandler.BAKED_COMMON.resourceTypes.entries.joinToString { "${it.key} -> ${it.value}" }}")
     }
     
     fun resourceLocation(path: String) = ResourceLocation(MOD_ID, path)
